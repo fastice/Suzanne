@@ -1,0 +1,1 @@
+This is an example ASF download script. You put the data in a queue, then they automatically generate this python script to download the data. The part that is most relevant for us is how they handle the earth data login and cache the passwd temporarily in a cookie of some sort.
