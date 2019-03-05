@@ -51,13 +51,17 @@ class cookie_maintenance:
     
     def __init__(self):
         # Local stash of cookies so we don't always have to ask                                                                                              
-        self.cookie_jar_path = os.path.join( os.path.expanduser('~'), ".bulk_download_cookiejar.txt")
+        self.cookie_jar_path = os.path.join( os.path.expanduser('~'), ".gimp_download_cookiejar.txt")
         self.cookie_jar = None
         # For SSL
         self.context = {}
         # Make sure cookie_jar is good to go!                                                                                                                
         self.get_cookie()
         
+        self.asf_urs4 = { 'url': 'https://urs.earthdata.nasa.gov/oauth/authorize',
+                 'client': 'BO_n7nTIlMljdvU6kRRB3g'} #,
+              #   'redir': 'https://vertex.daac.asf.alaska.edu/services/urs4_token_request'}
+
     # Get and validate a cookie
     def get_cookie(self):
        if os.path.isfile(self.cookie_jar_path):
@@ -147,9 +151,6 @@ class cookie_maintenance:
           new_username = input("Username: ")
        new_password = getpass.getpass(prompt="Password (will not be displayed): ")
     
-       # Build URS4 Cookie request
-       auth_cookie_url = self.asf_urs4['url'] + '?client_id=' + self.asf_urs4['client'] + '&redirect_uri=' + self.asf_urs4['redir'] + '&response_type=code&state='
-       print('auth_cookie_url',auth_cookie_url)
     
        try:
           #python2
@@ -162,7 +163,7 @@ class cookie_maintenance:
        # Authenticate against URS, grab all the cookies
        self.cookie_jar = MozillaCookieJar()
        opener = build_opener(HTTPCookieProcessor(self.cookie_jar), HTTPHandler(), HTTPSHandler(**self.context))
-       request = Request(auth_cookie_url, headers={"Authorization": "Basic {0}".format(user_pass)})
+       request = Request('https://daacdata.apps.nsidc.org/pub/DATASETS/', headers={"Authorization": "Basic {0}".format(user_pass)})
     
        # Watch out cookie rejection!
        try:
