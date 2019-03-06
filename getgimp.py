@@ -14,10 +14,8 @@ from bs4 import BeautifulSoup
 import argparse
 
 import base64
-import datetime
+import datetime, time
 import getpass
-#import ssl
-#import xml.etree.ElementTree as ET
 
 import requests
 from urllib.request import build_opener, install_opener, Request, urlopen, urlretrieve
@@ -102,17 +100,7 @@ class cookie_maintenance:
           exit(-1)
     
        # This return codes indicate the USER has not been approved to download the data
-       if resp_code in (300, 301, 302, 303):
-#          try:
-#             redir_url = response.info().getheader('Location')
-#          except AttributeError:
-#             redir_url = response.getheader('Location')
-#    
-#          #Funky Test env:
-#          if ("vertex.daac.asf.alaska.edu" in redir_url and "test" in self.asf_urs4['redir']):
-#             print ("Cough, cough. It's dusty in this test env!")
-#             return True
-    
+       if resp_code in (300, 301, 302, 303):    
           print ("Redirect ({0}) occured, invalid cookie value!".format(resp_code))
           return False
     
@@ -210,28 +198,24 @@ def check_region_name(region):
             region = region[:mydot+2] + '0' + region[mydot+2:]
         return region
     except:
-        return None
+        return ''
 
 # find dates in directory names (Suzanne, can you look for yyyy-mm-dd in each dir name? re.match() ? )
 def directory_dates(dirs,prod,region=None):
-    mon = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
+    dt_f = {'mmm':'%b','mm':'%m','yyyy':'%Y','yy':'%y','dd':'%d'}
     t0=[]
     t1=[]
     for dirname in dirs:
-        if prod == '0481' and region:
-            m = re.findall(r'(\w{3}\-\d{2}\-\d{4})',dirname)  # Mmm-dd-yyyy
-            month0,d0,y0 = m[0].split('-')
-            m0 = mon[month0]
-            month1,d1,y1 = m[1].split('-')
-            m1 = mon[month1]
-            
-        if prod == '0731':
-            m = re.findall(r'(\d{4}\-\d{2}\-\d{2})',dirname)  # yyyy-mm-dd
-            y0,m0,d0 = m[0].split('-')
-            y1,m1,d1 = m[1].split('-')
-            
-        t0.append(datetime.date(int(y0),int(m0),int(d0)))
-        t1.append(datetime.date(int(y1),int(m1),int(d1))) 
+        dirdate_format = prod_path[prod][0]
+        # build format to convert from, in python-ese
+        dt_format = dt_f[dirdate_format.split('-')[0]] + '-' + dt_f[dirdate_format.split('-')[1]] + '-' + dt_f[dirdate_format.split('-')[2]]
+        
+        pattern = re.compile(r'(\w{%d}-\w{%d}-\w{%d})' % (len(dirdate_format.split('-')[0]),len(dirdate_format.split('-')[1]),len(dirdate_format.split('-')[2]))) # doesn't like list comp
+        m = re.findall(pattern,dirname)  # Mmm-dd-yyyy
+        dt = time.strptime(m[0],dt_format)
+        t0.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday)) 
+        dt = time.strptime(m[1],dt_format)
+        t1.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday))
     return t1, t0
 
 
@@ -243,20 +227,20 @@ if __name__ == '__main__':
     try:   
         with open('productPaths.csv','r') as infile:
             rows = csv.reader(infile)
-            prod_path= {row[0]:row[1] for row in rows}
+            prod_path= {row[0]:[row[1],row[2]] for row in rows}   # product shortname, date format in directory name, url-path to product
     except:
         print('Need productPaths.csv file indicating paths of products')
         exit(-1)
-    
+
     # parse command line arguments
     parser = argparse.ArgumentParser(description='Retrieves GIMP files of specified products.')    
     # add parameters to parse
     parser.add_argument('-l', '--list', dest='prodlist', help='product name',default=None)  
     parser.add_argument('-p', '--pull', dest='prodpull', help='product name',default=None) 
-    parser.add_argument('-r', '--region', dest='region', help='regional, glaciar box name',default=None)
+    parser.add_argument('-r', '--region', dest='region', help='regional, glaciar box name',default='')
     parser.add_argument('-fd','--firstdate', dest='firstdate', help='first date as yyyy-mm-dd',default=None)
-    parser.add_argument('-ld','--lastdate', dest='lastdate', help='fast date as yyyy-mm-dd (default is first date)',default=None)
-    parser.add_argument('-o', '--outdir', dest='outdir', help='directory name for downloaded files (default is cwd)',default='./')
+    parser.add_argument('-ld','--lastdate', dest='lastdate', help='last date as yyyy-mm-dd',default=None)
+    parser.add_argument('-o', '--outdir', dest='outdir', help='directory name for downloaded files (default is product name)',default=None)
     parser.add_argument('-np', '--noprompt', action='store_true', help='suppress question about downloading')
     # parse the arguments
     args = parser.parse_args()
@@ -265,7 +249,11 @@ if __name__ == '__main__':
     args.region = check_region_name(args.region)
     
     if args.firstdate and not args.lastdate:
-        args.lastdate = args.firstdate  
+        print('Please include a lastdate')
+        exit(-1)
+        
+    if not args.outdir:
+        args.outdir = args.prod
         
     # if issues
     if args.prod not in prod_path:
@@ -275,23 +263,11 @@ if __name__ == '__main__':
     if args.prodlist and args.prodpull:
         print('You can only list or pull, not both.')
         exit(-1)
-
-    if args.prod=='0731' and args.region is not None:
-        print('Product {0} does not have regions'.format(args.prod))
-        exit(-1)
-        
-#    if args.prod=='0481' and args.region is None:
-#        print('Product {0} needs a region specified'.format(args.prod))
-#        exit(-1)
-        
-    if args.region and args.firstdate and args.prod is None:
-        print('This run needs a product, ie -list prod')
-        exit(-1)
-        
+       
     cookie_maintenance()
     
     # url and directory names.
-    url = prod_path[args.prod] + (args.region or '') 
+    url = prod_path[args.prod][1] + (args.region or '') 
     dirs = get_names(url,bool(args.prodpull))
     
     # put -firstdate and -lastdate arguments into python datetime format
@@ -328,9 +304,11 @@ if __name__ == '__main__':
         print()
         print('Downloading:')
         for dirname in dirs:
-            if not os.path.exists(args.outdir.strip('/') + '/' + dirname):
-                os.mkdir(args.outdir.strip('/') + '/' + dirname)
-                if os.access(dirname, os.W_OK) is False:  # I haven't checked this one
+            download_dir = args.outdir + '/' + args.region + dirname
+            print(download_dir)
+            if not os.path.exists(download_dir):
+                os.makedirs(download_dir)
+                if os.access(download_dir, os.W_OK) is False:  # I haven't checked this one
                     print ("WARNING: Cannot write to this path! Check permissions for {0}".format(dirname))
                     exit(-1)
     
@@ -339,7 +317,7 @@ if __name__ == '__main__':
                 fullpath = url + '/' + dirname + '/' + file
                 r = requests.get(fullpath)
                 
-                outfile = args.outdir.strip('/') + '/' + dirname + file
+                outfile = args.outdir + '/' + args.region + dirname + file
                 print(outfile)
                 with open(outfile,'wb') as f:
                     f.write(r.content)
