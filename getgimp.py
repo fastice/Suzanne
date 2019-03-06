@@ -256,7 +256,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--region', dest='region', help='regional, glaciar box name',default=None)
     parser.add_argument('-fd','--firstdate', dest='firstdate', help='first date as yyyy-mm-dd',default=None)
     parser.add_argument('-ld','--lastdate', dest='lastdate', help='fast date as yyyy-mm-dd (default is first date)',default=None)
-    #parser.add_argument('-o', '--outdir', dest='outdir', help='directory name for downloaded files (default is cwd)',default='./')
+    parser.add_argument('-o', '--outdir', dest='outdir', help='directory name for downloaded files (default is cwd)',default='./')
     parser.add_argument('-np', '--noprompt', action='store_true', help='suppress question about downloading')
     # parse the arguments
     args = parser.parse_args()
@@ -280,9 +280,9 @@ if __name__ == '__main__':
         print('Product {0} does not have regions'.format(args.prod))
         exit(-1)
         
-    if args.prod=='0481' and args.region is None:
-        print('Product {0} needs a region specified'.format(args.prod))
-        exit(-1)
+#    if args.prod=='0481' and args.region is None:
+#        print('Product {0} needs a region specified'.format(args.prod))
+#        exit(-1)
         
     if args.region and args.firstdate and args.prod is None:
         print('This run needs a product, ie -list prod')
@@ -315,15 +315,21 @@ if __name__ == '__main__':
         print('Available directories:')
         for dirname in dirs:
             print(dirname)
+            
+        if not args.region and args.prodlist == '0481':
+            print()
+            print('Include -r REGION on the command line for the list of products in the region')
+            print()
         if not args.noprompt:
-            answer = input('Do you want to download these products [y/n] :')
+            if (args.prodlist == '0481' and args.region) or args.prodlist == '0731':
+                answer = input('Do you want to download these products [y/n] :')
         
     if answer.startswith('y') or args.prodpull:
         print()
         print('Downloading:')
         for dirname in dirs:
-            if not os.path.exists(dirname):
-                os.mkdir(dirname)
+            if not os.path.exists(args.outdir.strip('/') + '/' + dirname):
+                os.mkdir(args.outdir.strip('/') + '/' + dirname)
                 if os.access(dirname, os.W_OK) is False:  # I haven't checked this one
                     print ("WARNING: Cannot write to this path! Check permissions for {0}".format(dirname))
                     exit(-1)
@@ -333,7 +339,7 @@ if __name__ == '__main__':
                 fullpath = url + '/' + dirname + '/' + file
                 r = requests.get(fullpath)
                 
-                outfile = dirname + file
+                outfile = args.outdir.strip('/') + '/' + dirname + file
                 print(outfile)
                 with open(outfile,'wb') as f:
                     f.write(r.content)
