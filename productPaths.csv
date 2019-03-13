@@ -1,2 +1,11 @@
-0731,yyyy-mm-dd,https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0731_MEASURES_monthly_vel_mosaics_v01/
-0481,mmm-dd-yyyy,https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0481_MEASURES_greenland_V01/
+0478,1,yyyy.mm.dd,	https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0478.002/
+0481,2,mmm-dd-yyyy,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0481_MEASURES_greenland_V01/
+0633,1,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0633_MEASURES_greenland_sar_mosaics_v1/
+0646,2,yyyy-mm,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0646_MEASURES_greenland_vel_optical_v2/
+0670,1,yyyy.mm.dd, 	https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0670.001/
+0713,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0713_MEASURES_gl_mosaic_v1/
+0723,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0723_MEASURES_image_mosaics_v02/
+0724,0,yyyymm,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0724_MEASURES_monthly_mog_v01/
+0725,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0725_MEASURES_annual_vel_mosaics_v01/
+0727,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0727_MEASURES_quarterly_vel_mosaics_v01/
+0731,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0731_MEASURES_monthly_vel_mosaics_v01/
