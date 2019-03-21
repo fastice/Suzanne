@@ -7,23 +7,42 @@
 #        to get list of command line arguments 
 #
 
+# Python 2 and 3:
+from __future__ import print_function   
+
 import csv
 import os, os.path, sys
 import re
 from bs4 import BeautifulSoup
-import argparse, collections
+import argparse
 
 import base64
 import datetime, time
 import getpass
 
 import requests
-from urllib.request import build_opener, install_opener, Request, urlopen, urlretrieve
-from urllib.request import HTTPHandler, HTTPSHandler, HTTPCookieProcessor
+#############                                                                                                                                                                  
+# This next block is a bunch of Python 2/3 compatability                                                                                                                       
 
-from urllib.error import HTTPError, URLError
+try:
+   # Python 3.x Libs                                                                                                                                                           
+   from urllib.request import build_opener, install_opener, Request, urlopen
+   from urllib.request import HTTPHandler, HTTPSHandler, HTTPCookieProcessor
+   from urllib.error import HTTPError, URLError
 
-from http.cookiejar import MozillaCookieJar
+   from http.cookiejar import MozillaCookieJar
+   from io import StringIO
+
+except ImportError as e:
+   # Python 2.x Libs                                                                                                                                                           
+   from urllib2 import build_opener, install_opener, Request, urlopen, HTTPError
+   from urllib2 import URLError, HTTPSHandler,  HTTPHandler, HTTPCookieProcessor
+
+   from cookielib import MozillaCookieJar
+   from StringIO import StringIO
+
+
+###                                                                                                                                                                            
 
 
 class cookie_maintenance:
@@ -90,7 +109,7 @@ class cookie_maintenance:
           self.cookie_jar.save(self.cookie_jar_path)
     
        except HTTPError:
-          # If we ge this error, again, it likely means the user has not agreed to current EULA
+          # If we get this error, again, it likely means the user has not agreed to current EULA
           print ("\nIMPORTANT: ")
           print ("User appears to lack permissions to download data from the Earthdata Datapool.")
           print ("\n\nNew users: you must first have an account at Earthdata https://urs.earthdata.nasa.gov")
@@ -170,12 +189,6 @@ class cookie_maintenance:
        
        return False
 
-def flatten(x):
-    if isinstance(x, collections.Iterable):
-        return [a for i in x for a in flatten(i)]
-    else:
-        return [x]
-    
 def get_names(urldir):
     dlist=[]
     r = requests.get(urldir)
@@ -262,7 +275,7 @@ def download_files(url,args,dirpath,file_list):
         fullpath = url + dirpath + file
         r = requests.get(fullpath)
                         
-        outfile = args.outdir + '/' + dirpath + file
+        outfile = args.outpath + '/' + dirpath + file
         print('Downloading: ',outfile)
         with open(outfile,'wb') as f:
              f.write(r.content)
@@ -274,7 +287,7 @@ def help_msg(keys):
     
 def establish_dir(download_dir):
    if not os.path.exists(download_dir):
-        os.makedirs(download_dir, exist_ok = True)
+        os.makedirs(download_dir)
         if os.access(download_dir, os.W_OK) is False:  # I haven't checked this one
             print ("WARNING: Cannot write to this path! Check permissions for {0}".format(download_dir))
             exit(-1)
@@ -292,26 +305,25 @@ if __name__ == '__main__':
         print('Need productPaths.csv file containing path info.')
         exit(-1)
     
-#    # parse command line arguments
+    # parse command line arguments
     parser = argparse.ArgumentParser(description='Retrieves GIMP files of specified products.')    
     # add parameters to parse
     parser.add_argument('-l', '--list', dest='prodlist', metavar='product number', help=help_msg(prod_path.keys()),default=None)  
     parser.add_argument('-p', '--pull', dest='prodpull', metavar='product number', help='product name',default=None) 
-    parser.add_argument('-r', '--region', dest='region', help='options: regional glacier box name, or all',default='')
-    parser.add_argument('-fd','--firstdate', dest='firstdate', help='first date as yyyy-mm-dd',default=None)
-    parser.add_argument('-ld','--lastdate', dest='lastdate', help='last date as yyyy-mm-dd',default=None)
-    parser.add_argument('-t', '--type', dest='type', metavar='mosaic type', help='mosaic type (resolution)',default='')
-    parser.add_argument('-name', '--byname', dest='byname', metavar='non-date directory name', help='name without dates',default='')
-    parser.add_argument('-o', '--outdir', dest='outdir', help='directory name for downloaded files (default is product name)',default=None)
-    parser.add_argument('-np','--noprompt', action='store_true', help='suppress question about downloading')
-    # parse the arguments
+    parser.add_argument('-r', '--region', dest='region', help='options: regional glacier box name (e.g., Wcoast-69.10), or all',default='')
+    parser.add_argument('-fd','--firstdate', dest='firstdate', help='first date as yyyy-mm-dd',default='1900-01-01')
+    parser.add_argument('-ld','--lastdate', dest='lastdate', help='last date as yyyy-mm-dd',default='2100-01-01')
+    parser.add_argument('-t', '--type', dest='type', metavar='mosaic type', help='mosaic type for cases with multiple resolutions (e.g., use 20byte to download 0633/2005_2006/20byte)',default='')
+    parser.add_argument('-name', '--byname', dest='byname', metavar='non-date directory name', help='Use for productions with non date derived names (e.g., 0633/multiyear_composite).' ,default='')
+    parser.add_argument('-o', '--outpath', dest='outpath', help='path for downloaded files (default is ./produce number - e.g., ./0478)',default=None)
+    parser.add_argument('-v', '--verbose', action='store_true', help='list files as well as directories')
     args = parser.parse_args()
     if len(sys.argv) == 1: # if no command line arguments
         parser.print_help()
         sys.exit(1)
         
     args.dival = dival
-    
+
     # sort out arguments and return errors if need be
     args.prod = args.prodlist or args.prodpull  
     url = prod_path[args.prod][args.dival['url']]
@@ -319,52 +331,39 @@ if __name__ == '__main__':
     if args.region != 'all': 
         args.region = check_region_name(args.region)
     
-    if args.prodpull:
-        args.noprompt = True # if pulling, do ask about pulling
-    
     if args.region and prod_path[args.prod][args.dival['dateLevel']]<=1:
         print()
         print('This product, %s, does not have regions.' % args.prod)
         print()
         exit(-1)
         
-    if not args.outdir:
-        args.outdir = args.prod
-        
-    if args.firstdate and not args.lastdate:
-        print()
-        print('Please include a lastdate')
-        print()
-        exit(-1)
-        
+    if not args.outpath:
+        args.outpath = args.prod
+    else:
+        args.outpath = args.outpath.split('/')[0] + '/' + args.prod
+    
+    # put -firstdate and -lastdate arguments into datetime.date format
+    yf,mf,df = [int(item) for item in args.firstdate.split('-')]
+    firstdate = datetime.date(yf,mf,df)  
+    yl,ml,dl = [int(item) for item in args.lastdate.split('-')]
+    lastdate = datetime.date(yl,ml,dl)        
+
     if args.prodlist and args.prodpull:
         print('You can only list or pull, not both.')
         exit(-1)
 
-    if prod_path[args.prod][args.dival['dateLevel']] == 0 and args.firstdate:
+    if prod_path[args.prod][args.dival['dateLevel']] == 0 and args.region:
         print()
-        print('Product {0} does not have directories separated by times.'.format(args.prod))
+        print('Product {0} does not have directories separated by region or dates.'.format(args.prod))
         print()
         exit(-1)
-        
-
-    # put -firstdate and -lastdate arguments into python datetime format
-    if args.firstdate:
-        yf,mf,df = [int(item) for item in args.firstdate.split('-')]
-        firstdate = datetime.date(yf,mf,df)  # converted to the datetime format
-        yl,ml,dl = [int(item) for item in args.lastdate.split('-')]
-        lastdate = datetime.date(yl,ml,dl)        
-    else:
-        firstdate = datetime.date(1900,1,1)
-        lastdate = datetime.date(2100,1,1)
 
     if args.type:
         args.type = args.type.strip('/') + '/'
     if args.byname:
         args.byname = args.byname.strip('/') + '/'
-        if not args.firstdate:  # to get only args.byname directory
-            firstdate = datetime.date(2100,1,1)
-            lastdate = datetime.date(1900,1,1)
+        firstdate = datetime.date(2100,1,1)
+        lastdate = datetime.date(1900,1,1)
             
     if args.prod not in prod_path:
         print('Product {0} is not available, please see getgimp.py -h or update ./productPaths.csv'.format(args.prod))
@@ -375,31 +374,48 @@ if __name__ == '__main__':
     ##### list or pull files     
     # dateLevel = 0 means only one dir, either list or download files
     if prod_path[args.prod][args.dival['dateLevel']] == 0:
-        
-        files = get_names(url)
-        [print('file: ',file) for file in files if args.prodlist] 
-        answer =''
-        if files and not args.noprompt:
-            answer = input('Do you want to download these files? [y/n]')
-        if files and args.prodpull or files and answer.startswith('y'):
-            establish_dir(args.outdir + '/')
+        names = get_names(url)
+        files = [item for item in names if not item.endswith('/')]        
+        [print('file: ',file) for file in files if args.prodlist if files if args.verbose] 
+        if args.prodlist and not args.verbose:
+            print()
+            print('Use --verbose to see file listing for product {0}.'.format(args.prod))
+            print()
+                
+        if files and args.prodpull:
+            establish_dir(args.outpath + '/')
             download_files(url,args,'',files)
-#        if args.prodlist:
-#            print()
-#            print('Use -p instead of -l to pull/download the files.')
-#            print()
+
+        dirs = [item for item in names if item.endswith('/')]  
+        if args.prodlist and not files and not args.verbose:
+            print()
+            print('Use --verbose to see file listing for product {0}.'.format(args.prod))
+            print()
+        
+        if dirs:
+            for dirname in dirs:    
+                if args.prodlist:
+                    print(dirname)
+                subnames = get_names(url+dirname)
+                subfiles = [item for item in subnames if not item.endswith('/')]
+                [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
+                if subfiles and args.prodpull:
+                    establish_dir(args.outpath + '/' + dirname)
+                    download_files(url,args,dirname,subfiles)                            
+                        
+        if args.prodlist:
+            print()
+            print('Use -p instead of -l to pull/download the files.')
+            print()
     
     # dateLevel = 1 indicates there are dirs within that go by date,
     elif prod_path[args.prod][args.dival['dateLevel']] == 1:     
 
         names = get_names(url)
         files = [item for item in names if not item.endswith('/')]        
-        [print('file: ',file) for file in files if args.prodlist if files] 
-        answer =''
-        if files and not args.noprompt:
-            answer = input('Do you want to download these files? [y/n]')
-        if files and args.prodpull or files and answer.startswith('y'):
-            establish_dir(args.outdir + '/')
+        [print('file: ',file) for file in files if args.prodlist if files if args.verbose] 
+        if files and args.prodpull:
+            establish_dir(args.outpath + '/')
             download_files(url,args,'',files)
 
         dirs = [item for item in names if item.endswith('/')]  
@@ -412,14 +428,13 @@ if __name__ == '__main__':
                 dirs.append(args.byname)
 
             for dirname in dirs:    
+                if args.prodlist:
+                    print(dirname)
                 subnames = get_names(url+dirname)
                 subfiles = [item for item in subnames if not item.endswith('/')]
-                [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles] 
-                answer =''
-                if subfiles and not args.noprompt:
-                    answer = input('Do you want to download these files? [y/n]')
-                if subfiles and args.prodpull or subfiles and answer.startswith('y'):
-                    establish_dir(args.outdir + '/' + dirname)
+                [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
+                if subfiles and args.prodpull:
+                    establish_dir(args.outpath + '/' + dirname)
                     download_files(url,args,dirname,subfiles)                            
                 
                 subdirs = [item for item in subnames if item.endswith('/') or item == args.type] 
@@ -428,20 +443,24 @@ if __name__ == '__main__':
                
                 if subdirs:
                     for subname in subdirs:
+                        if args.prodlist:
+                            print(dirname+subname)
                         subsubnames = get_names(url+dirname+subname)
                         subsubfiles = [item for item in subsubnames if not item.endswith('/')]
-                        [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles] 
-                        answer =''
-                        if subsubfiles and not args.noprompt:
-                            answer = input('Do you want to download these files? [y/n]')
-                        if subsubfiles and args.prodpull or subsubfiles and answer.startswith('y'):
-                            establish_dir(args.outdir + '/' + dirname + subname)
+                        [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
+                        if subsubfiles and args.prodpull:
+                            establish_dir(args.outpath + '/' + dirname + subname)
                             download_files(url,args,dirname+subname,subsubfiles)
                             
                         subsubdirs = [item for item in subsubnames if item.endswith('/')] 
                         if subsubdirs:
                             print('huh ', subsubdirs)
                             exit(-1)
+            
+            if args.prodlist:                
+                print()
+                print('Use -p instead of -l to pull/download files.')
+                print()
 
     # dateLevel = 2 indicates there are dirs that go by date, one level down
     elif prod_path[args.prod][args.dival['dateLevel']] == 2:
@@ -449,11 +468,8 @@ if __name__ == '__main__':
             names = get_names(url)
             files = [item for item in names if not item.endswith('/')]        
             [print('file',file) for file in files if args.prodlist if files]     
-            answer =''
-            if files and not args.noprompt:
-                answer = input('Do you want to download these files? [y/n]')
-            if files and args.prodpull or files and answer.startswith('y'):
-                establish_dir(args.outdir + '/')
+            if files and args.prodpull:
+                establish_dir(args.outpath + '/')
                 download_files(url,args,'',files)
             
             dirs = [item for item in names if item.endswith('/')]
@@ -464,18 +480,15 @@ if __name__ == '__main__':
                     elif args.prodpull:
                         print(dirname)
                 print()
-                print('Use -r REGION or -r all to list or download files for this product')
+                print('Use -r REGION or -r all to list or download files for product {0}.'.format(args.prod))
                 print()
                             
         elif args.region: 
             names = get_names(url)
             files = [item for item in names if not item.endswith('/')]  
-            [print('file',file) for file in files if args.prodlist if files] 
-            answer =''
-            if files and not args.noprompt:
-                answer = input('Do you want to download these files? [y/n]')
-            if files and args.prodpull or files and answer.startswith('y'):
-                establish_dir(args.outdir + '/')
+            [print('file',file) for file in files if args.prodlist if files if args.verbose] 
+            if files and args.prodpull:
+                establish_dir(args.outpath + '/')
                 download_files(url,args,'',files)
                 
             if args.region == 'all':
@@ -485,15 +498,13 @@ if __name__ == '__main__':
 
             if dirs:
                 for dirname in dirs:
-                    print(dirname)
+                    if args.prodlist:
+                        print(dirname)
                     subnames = get_names(url + dirname)
                     subfiles = [item for item in subnames if not item.endswith('/')]
-                    [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles ]
-                    answer =''
-                    if subfiles and not args.noprompt:
-                        answer = input('Do you want to download these files? [y/n]')
-                    if subfiles and args.prodpull or subfiles and answer.startswith('y'):
-                        establish_dir(args.outdir + '/' + dirname)
+                    [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose]
+                    if subfiles and args.prodpull:
+                        establish_dir(args.outpath + '/' + dirname)
                         download_files(url,args,dirname,subfiles)
                                                     
                     subdirs = [item for item in subnames if item.endswith('/')]     # line A
@@ -506,14 +517,13 @@ if __name__ == '__main__':
                    
                     if subdirs:
                         for subname in subdirs:
+                            if args.prodlist:
+                                print(dirname+subname)
                             subsubnames = get_names(url + dirname + subname)
                             subsubfiles = [item for item in subsubnames if not item.endswith('/')]
-                            [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles] 
-                            answer =''
-                            if subsubfiles and not args.noprompt:
-                                answer = input('Do you want to download these files? [y/n]')
-                            if subsubfiles and args.prodpull or subsubfiles and answer.startswith('y'):
-                                establish_dir(args.outdir + '/' + dirname + subname)
+                            [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
+                            if subsubfiles and args.prodpull:
+                                establish_dir(args.outpath + '/' + dirname + subname)
                                 download_files(url,args,dirname + subname,subsubfiles)
                                 
                             subsubdirs = [item for item in subsubnames if item.endswith('/') or item == args.type] 
@@ -522,4 +532,8 @@ if __name__ == '__main__':
                             if subsubdirs:
                                 print('huh ', subsubdirs)
                                 exit(-1)
-         
+            if args.prodlist:
+                print()
+                print('Use -p instead of -l to pull/download files.')
+                print()
+
