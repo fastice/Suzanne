@@ -272,11 +272,11 @@ def directory_dates(dirs,args):
 
 def download_files(url,args,dirpath,file_list):
     for file in file_list:
+        outfile = args.outpath + '/' + dirpath + file
+        print('Downloading: ',outfile)
         fullpath = url + dirpath + file
         r = requests.get(fullpath)
                         
-        outfile = args.outpath + '/' + dirpath + file
-        print('Downloading: ',outfile)
         with open(outfile,'wb') as f:
              f.write(r.content)
     print('Done')
@@ -315,7 +315,7 @@ if __name__ == '__main__':
     parser.add_argument('-ld','--lastdate', dest='lastdate', help='last date as yyyy-mm-dd',default='2100-01-01')
     parser.add_argument('-t', '--type', dest='type', metavar='mosaic type', help='mosaic type for cases with multiple resolutions (e.g., use 20byte to download 0633/2005_2006/20byte)',default='')
     parser.add_argument('-name', '--byname', dest='byname', metavar='non-date directory name', help='Use for productions with non date derived names (e.g., 0633/multiyear_composite).' ,default='')
-    parser.add_argument('-o', '--outpath', dest='outpath', help='path for downloaded files (default is ./produce number - e.g., ./0478)',default=None)
+    parser.add_argument('-o', '--outpath', dest='outpath', help='path for downloaded files (default is ./product number - e.g., ./0478)',default=None)
     parser.add_argument('-v', '--verbose', action='store_true', help='list files as well as directories')
     args = parser.parse_args()
     if len(sys.argv) == 1: # if no command line arguments
@@ -326,7 +326,13 @@ if __name__ == '__main__':
 
     # sort out arguments and return errors if need be
     args.prod = args.prodlist or args.prodpull  
-    url = prod_path[args.prod][args.dival['url']]
+    try:
+        url = prod_path[args.prod][args.dival['url']]
+    except:
+        print()
+        print('Product %s is not available.' % args.prod)    
+        print()
+        exit(-1)
 
     if args.region != 'all': 
         args.region = check_region_name(args.region)
@@ -387,21 +393,21 @@ if __name__ == '__main__':
             download_files(url,args,'',files)
 
         dirs = [item for item in names if item.endswith('/')]  
-        if args.prodlist and not files and not args.verbose:
-            print()
-            print('Use --verbose to see file listing for product {0}.'.format(args.prod))
-            print()
-        
         if dirs:
             for dirname in dirs:    
                 if args.prodlist:
                     print(dirname)
-                subnames = get_names(url+dirname)
-                subfiles = [item for item in subnames if not item.endswith('/')]
-                [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
-                if subfiles and args.prodpull:
-                    establish_dir(args.outpath + '/' + dirname)
-                    download_files(url,args,dirname,subfiles)                            
+                    if args.verbose:
+                        subnames = get_names(url+dirname)
+                        subfiles = [item for item in subnames if not item.endswith('/')]
+                        [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
+                else:
+                    subnames = get_names(url+dirname)
+                    subfiles = [item for item in subnames if not item.endswith('/')]
+                    [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
+                    if subfiles and args.prodpull:
+                        establish_dir(args.outpath + '/' + dirname)
+                        download_files(url,args,dirname,subfiles)                            
                         
         if args.prodlist:
             print()
@@ -414,6 +420,11 @@ if __name__ == '__main__':
         names = get_names(url)
         files = [item for item in names if not item.endswith('/')]        
         [print('file: ',file) for file in files if args.prodlist if files if args.verbose] 
+        if args.prodlist and not args.verbose:
+            print()
+            print('Use --verbose to see file listing for product {0}.'.format(args.prod))
+            print()
+
         if files and args.prodpull:
             establish_dir(args.outpath + '/')
             download_files(url,args,'',files)
@@ -430,33 +441,55 @@ if __name__ == '__main__':
             for dirname in dirs:    
                 if args.prodlist:
                     print(dirname)
-                subnames = get_names(url+dirname)
-                subfiles = [item for item in subnames if not item.endswith('/')]
-                [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
-                if subfiles and args.prodpull:
-                    establish_dir(args.outpath + '/' + dirname)
-                    download_files(url,args,dirname,subfiles)                            
+                    if args.verbose:
+                        subnames = get_names(url+dirname)
+                        subfiles = [item for item in subnames if not item.endswith('/')]
+                        [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
+                        subdirs = [item for item in subnames if item.endswith('/') or item == args.type] 
+                        if subdirs and args.type:
+                            subdirs = [item for item in subnames if item == args.type]    
+                       
+                        if subdirs:
+                            for subname in subdirs:
+                                if args.prodlist:
+                                    print(dirname+subname)
+                                    subsubnames = get_names(url+dirname+subname)
+                                    subsubfiles = [item for item in subsubnames if not item.endswith('/')]
+                                    [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
+                        
+                else:
+                    subnames = get_names(url+dirname)
+                    subfiles = [item for item in subnames if not item.endswith('/')]
+                    [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
+                    if subfiles and args.prodpull:
+                        establish_dir(args.outpath + '/' + dirname)
+                        download_files(url,args,dirname,subfiles) 
+                    
+                    subdirs = [item for item in subnames if item.endswith('/') or item == args.type] 
+                    if subdirs and args.type:
+                        subdirs = [item for item in subnames if item == args.type]    
+                   
+                    if subdirs:
+                        for subname in subdirs:
+                            if args.prodlist:
+                                print(dirname+subname)
+                                if args.verbose:
+                                    subsubnames = get_names(url+dirname+subname)
+                                    subsubfiles = [item for item in subsubnames if not item.endswith('/')]
+                                    [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
+                            else:
+                                subsubnames = get_names(url+dirname+subname)
+                                subsubfiles = [item for item in subsubnames if not item.endswith('/')]
+                                [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
+                                if subsubfiles and args.prodpull:
+                                    establish_dir(args.outpath + '/' + dirname + subname)
+                                    download_files(url,args,dirname+subname,subsubfiles)
+                                    
+                                subsubdirs = [item for item in subsubnames if item.endswith('/')] 
+                                if subsubdirs:
+                                    print('huh ', subsubdirs)
+                                    exit(-1)
                 
-                subdirs = [item for item in subnames if item.endswith('/') or item == args.type] 
-                if subdirs and args.type:
-                    subdirs = [item for item in subnames if item == args.type]    
-               
-                if subdirs:
-                    for subname in subdirs:
-                        if args.prodlist:
-                            print(dirname+subname)
-                        subsubnames = get_names(url+dirname+subname)
-                        subsubfiles = [item for item in subsubnames if not item.endswith('/')]
-                        [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
-                        if subsubfiles and args.prodpull:
-                            establish_dir(args.outpath + '/' + dirname + subname)
-                            download_files(url,args,dirname+subname,subsubfiles)
-                            
-                        subsubdirs = [item for item in subsubnames if item.endswith('/')] 
-                        if subsubdirs:
-                            print('huh ', subsubdirs)
-                            exit(-1)
-            
             if args.prodlist:                
                 print()
                 print('Use -p instead of -l to pull/download files.')
@@ -467,7 +500,7 @@ if __name__ == '__main__':
         if not args.region:
             names = get_names(url)
             files = [item for item in names if not item.endswith('/')]        
-            [print('file',file) for file in files if args.prodlist if files]     
+            [print('file: ',file) for file in files if args.prodlist if files]     
             if files and args.prodpull:
                 establish_dir(args.outpath + '/')
                 download_files(url,args,'',files)
@@ -485,8 +518,9 @@ if __name__ == '__main__':
                             
         elif args.region: 
             names = get_names(url)
+            print('rul',url)
             files = [item for item in names if not item.endswith('/')]  
-            [print('file',file) for file in files if args.prodlist if files if args.verbose] 
+            [print('file: ',file) for file in files if args.prodlist if files if args.verbose] 
             if files and args.prodpull:
                 establish_dir(args.outpath + '/')
                 download_files(url,args,'',files)
@@ -500,38 +534,69 @@ if __name__ == '__main__':
                 for dirname in dirs:
                     if args.prodlist:
                         print(dirname)
-                    subnames = get_names(url + dirname)
-                    subfiles = [item for item in subnames if not item.endswith('/')]
-                    [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose]
-                    if subfiles and args.prodpull:
-                        establish_dir(args.outpath + '/' + dirname)
-                        download_files(url,args,dirname,subfiles)
-                                                    
-                    subdirs = [item for item in subnames if item.endswith('/')]     # line A
-                    # trim by date
-                    dir_date1,dir_date2 = directory_dates(subdirs,args)
-                    mask = [dir_date1[ii]>=firstdate and dir_date2[ii]<=lastdate for ii in range(len(dir_date1))]
-                    subdirs = [subdirs[ii] for ii in range(len(subdirs)) if mask[ii]]
-                    if args.byname:
-                        subdirs.append(args.byname)
-                   
-                    if subdirs:
-                        for subname in subdirs:
-                            if args.prodlist:
-                                print(dirname+subname)
-                            subsubnames = get_names(url + dirname + subname)
-                            subsubfiles = [item for item in subsubnames if not item.endswith('/')]
-                            [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
-                            if subsubfiles and args.prodpull:
-                                establish_dir(args.outpath + '/' + dirname + subname)
-                                download_files(url,args,dirname + subname,subsubfiles)
-                                
-                            subsubdirs = [item for item in subsubnames if item.endswith('/') or item == args.type] 
+                        subnames = get_names(url + dirname)
+                        subfiles = [item for item in subnames if not item.endswith('/')]
+                        [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose]
+                        subdirs = [item for item in subnames if item.endswith('/') or item == args.type] 
+                        if subdirs and args.type:
+                            subdirs = [item for item in subnames if item == args.type]    
+                       
+                        if subdirs and not args.verbose:
+                            for subname in subdirs:
+                                if args.prodlist:
+                                    print(dirname+subname)
+                        
+                        if args.verbose:
+                            subnames = get_names(url+dirname)
+                            subfiles = [item for item in subnames if not item.endswith('/')]
+                            [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose] 
+                            subdirs = [item for item in subnames if item.endswith('/') or item == args.type] 
                             if subdirs and args.type:
                                 subdirs = [item for item in subnames if item == args.type]    
-                            if subsubdirs:
-                                print('huh ', subsubdirs)
-                                exit(-1)
+                           
+                            if subdirs:
+                                for subname in subdirs:
+                                    if args.prodlist:
+                                        print(dirname+subname)
+                                        subsubnames = get_names(url+dirname+subname)
+                                        subsubfiles = [item for item in subsubnames if not item.endswith('/')]
+                                        [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
+                                
+                    else:
+                        subnames = get_names(url + dirname)
+                        subfiles = [item for item in subnames if not item.endswith('/')]
+                        [print('file: ',dirname+file) for file in subfiles if args.prodlist if subfiles if args.verbose]
+                        
+                        if subfiles and args.prodpull:
+                            establish_dir(args.outpath + '/' + dirname)
+                            download_files(url,args,dirname,subfiles)
+                                                        
+                        subdirs = [item for item in subnames if item.endswith('/')]     # line A
+                        # trim by date
+                        dir_date1,dir_date2 = directory_dates(subdirs,args)
+                        mask = [dir_date1[ii]>=firstdate and dir_date2[ii]<=lastdate for ii in range(len(dir_date1))]
+                        subdirs = [subdirs[ii] for ii in range(len(subdirs)) if mask[ii]]
+                        if args.byname:
+                            subdirs.append(args.byname)
+                       
+                        if subdirs:
+                            for subname in subdirs:
+                                if args.prodlist:
+                                    print(dirname+subname)
+                                else:
+                                    subsubnames = get_names(url + dirname + subname)
+                                    subsubfiles = [item for item in subsubnames if not item.endswith('/')]
+                                    [print('file: ',dirname+subname+file) for file in subsubfiles if args.prodlist if subsubfiles if args.verbose] 
+                                    if subsubfiles and args.prodpull:
+                                        establish_dir(args.outpath + '/' + dirname + subname)
+                                        download_files(url,args,dirname + subname,subsubfiles)
+                                        
+                                    subsubdirs = [item for item in subsubnames if item.endswith('/') or item == args.type] 
+                                    if subdirs and args.type:
+                                        subdirs = [item for item in subnames if item == args.type]    
+                                    if subsubdirs:
+                                        print('huh ', subsubdirs)
+                                        exit(-1)
             if args.prodlist:
                 print()
                 print('Use -p instead of -l to pull/download files.')
