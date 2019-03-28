@@ -9,7 +9,7 @@
 0714,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0714_MEASURES_gimp_mask_v1/
 0715,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0715_MEASURES_gimp_dem/
 0723,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0723_MEASURES_image_mosaics_v02/
-0724,0,yyyymm,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0724_MEASURES_monthly_mog_v01/
+0724,0,yyyymm,		https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0724.001/
 0725,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0725_MEASURES_annual_vel_mosaics_v01/
 0727,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0727_MEASURES_quarterly_vel_mosaics_v01/
 0731,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0731_MEASURES_monthly_vel_mosaics_v01/

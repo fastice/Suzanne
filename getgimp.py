@@ -416,6 +416,7 @@ if __name__ == '__main__':
     # put -firstdate and -lastdate arguments into datetime.date format
     yf,mf,df = [int(item) for item in args.firstdate.split('-')]
     firstdate = datetime.date(yf,mf,df)  
+    print
     yl,ml,dl = [int(item) for item in args.lastdate.split('-')]
     lastdate = datetime.date(yl,ml,dl)        
 
@@ -430,7 +431,7 @@ if __name__ == '__main__':
         args.type = args.type.strip('/') + '/'
     if args.byname:
         args.byname = args.byname.strip('/') + '/'
-        if args.firstdate == datetime.date(1900,1,1) and args.lastdate == datetime.date(2100,1,1):
+        if firstdate == datetime.date(1900,1,1) and lastdate == datetime.date(2100,1,1):
             firstdate = datetime.date(2100,1,1)   # if by name, dont get by dates
             lastdate = datetime.date(1900,1,1)
             
@@ -482,7 +483,7 @@ if __name__ == '__main__':
         if dirs:
             # trim by dates
             dirs = directory_dates(dirs,args)
-            if args.byname:
+            if args.byname and args.byname not in dirs:
                 dirs.append(args.byname)
 
             for dirname in dirs:    
