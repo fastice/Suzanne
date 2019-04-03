@@ -285,12 +285,14 @@ def directory_dates(dirs,args):
             if m:
                 dt = time.strptime(m[0],dt_format)
                 t0.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday)) # default is first month, first day
-                dt = time.strptime(m[1],dt_format)
+                if len(m)>1:
+                    dt = time.strptime(m[1],dt_format)
+                else:
+                    dt = time.strptime(m[0],dt_format)
                 t1.append(datetime.date(dt.tm_year,12,31))
             else:
                 t0.append(datetime.date(1900,1,1)) # will not get dirs if no dates in them, use --byname
                 t1.append(datetime.date(2100,1,1))
-
     mask = [t0[ii]>=firstdate and t1[ii]<=lastdate for ii in range(len(t0))]
     return [dirs[ii] for ii in range(len(dirs)) if mask[ii]]    
 
@@ -439,7 +441,7 @@ if __name__ == '__main__':
         exit_msg('Product {0} is not available, please see getgimp.py -h or update ./productPaths.csv'.format(args.prod))
         
     cookie_maintenance()
-    
+
     ##### list or pull files 
     # dateLevel = 0 currently means no date level, but has types
     #dir_list = []   
