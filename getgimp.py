@@ -20,7 +20,7 @@ import argparse
 import threading
 
 import base64
-import datetime, time
+import datetime, time, calendar
 import getpass
 
 import requests
@@ -31,22 +31,23 @@ from runMyThreads import runMyThreads
 # This next block is a bunch of Python 2/3 compatability                                                                                                                       
 
 try:
-   # Python 3.x Libs                                                                                                                                                           
-   from urllib.request import build_opener, install_opener, Request, urlopen
-   from urllib.request import HTTPHandler, HTTPSHandler, HTTPCookieProcessor
-   from urllib.error import HTTPError, URLError
-   from urllib.parse import urlparse   ########### need for py2
+   # Python 3.x Libs             
+    import urllib.request                                                                                                                                    
+    from urllib.request import build_opener, install_opener, Request, urlopen
+    from urllib.request import HTTPHandler, HTTPSHandler, HTTPCookieProcessor
+    from urllib.error import HTTPError, URLError
+    from urllib.parse import urlparse   ########### need for py2
 
-   from http.cookiejar import MozillaCookieJar
-   from io import StringIO
+    from http.cookiejar import MozillaCookieJar
+    from io import StringIO
 
 except ImportError as e:
    # Python 2.x Libs                                                                                                                                                           
-   from urllib2 import build_opener, install_opener, Request, urlopen, HTTPError
-   from urllib2 import URLError, HTTPSHandler,  HTTPHandler, HTTPCookieProcessor
+    from urllib2 import build_opener, install_opener, Request, urlopen, HTTPError
+    from urllib2 import URLError, HTTPSHandler,  HTTPHandler, HTTPCookieProcessor
 
-   from cookielib import MozillaCookieJar
-   from StringIO import StringIO
+    from cookielib import MozillaCookieJar
+    from StringIO import StringIO
 
 
 ###                                                                                                                                                                            
@@ -220,7 +221,17 @@ def get_names(urldir,args):
                 
         if args.region and args.region != 'all' and not urldir.endswith(args.region):
             dlist = [item for item in alist if item == args.region.strip('/') + '/']  # to make dirs a list with one element
-        
+            if not dlist and args.region not in urldir:
+                print()
+                print('Region {0} is not available for product {1}.'.format(args.region,args.prod))
+                print()
+                print('Possible regions include:')
+                time.sleep(2) # in case list is longer then terminal window is tall.
+                for item in alist:
+                    if item.endswith('/'):
+                        print(item)
+                exit(-1)
+                
         return flist, dlist
     else:
         print('requests.get response has bad status_code')
@@ -233,6 +244,8 @@ def check_region_name(region):
         if len(decdeg[0]) < 2:
             mydot = region.find('.')
             region = region[:mydot+2] + '0' + region[mydot+2:]
+        region = region.strip('/') + '/'
+        
         return region
     except:
         return ''
@@ -246,6 +259,7 @@ def directory_dates(dirs,args):
     
     dirdate_format = prod_path[args.prod][args.dival['dateFormat']]  # in dir names
     dd_f = re.findall(r"[\w']+",dirdate_format)
+
     try:
         sep  = re.findall(r"[.-]+",dirdate_format)[0]
     except:
@@ -255,28 +269,37 @@ def directory_dates(dirs,args):
     for dirname in dirs:
         # build format to convert from, in python-ese
         if len(dd_f)==3:
+            
             #forma = sep.join[len(dd_f[i]) for i in len(dd_f)]
             pattern = re.compile(r'(\w{%d}%s\w{%d}%s\w{%d})' % (len(dd_f[0]),sep,len(dd_f[1]),sep,len(dd_f[2]))) # doesn't like list comp
             m = re.findall(pattern,dirname)
-            dt = time.strptime(m[0].replace(sep,'-'),dt_format)
-            t0.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday)) 
-            if len(m)>1:
-                dt = time.strptime(m[1],dt_format)
-                t1.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday))
+            if m:
+                dt = time.strptime(m[0].replace(sep,'-'),dt_format)
+                t0.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday)) 
+                if len(m)>1:
+                    dt = time.strptime(m[1],dt_format)
+                    t1.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday))
+                else:
+                    t1.append(datetime.date(dt.tm_year,dt.tm_mon,days_in_month[dt.tm_mon]))
             else:
-                t1.append(datetime.date(dt.tm_year,dt.tm_mon,days_in_month[dt.tm_mon]))
- 
+                t0.append(datetime.date(2100,1,1)) # will not get dirs if no dates in them, use --byname
+                t1.append(datetime.date(1900,1,1))
+
         # sometimes there are only year and month
         elif len(dd_f)==2:
             pattern = re.compile(r'(\w{%d}%s\w{%d})' % (len(dd_f[0]),sep,len(dd_f[1]))) 
             m = re.findall(pattern,dirname) 
-            dt = time.strptime(m[0],dt_format)
-            t0.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday)) 
-            if len(m)>1:
-                dt = time.strptime(m[1],dt_format)
-                t1.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday))
-            else:          
-                t1.append(datetime.date(dt.tm_year,dt.tm_mon,days_in_month[dt.tm_mon]))
+            if m:
+                dt = time.strptime(m[0],dt_format)
+                t0.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday)) # default is first day
+                if len(m)>1:
+                    dt = time.strptime(m[1],dt_format)
+                    t1.append(datetime.date(dt.tm_year,dt.tm_mon,dt.tm_mday))
+                else:          
+                    t1.append(datetime.date(dt.tm_year,dt.tm_mon,days_in_month[dt.tm_mon])) # set to last day
+            else:
+                t0.append(datetime.date(2100,1,1)) # will not get dirs if no dates in them, use --byname
+                t1.append(datetime.date(1900,1,1))
             
         # sometimes there is only year
         elif len(dirdate_format.split('-'))==1:
@@ -289,11 +312,12 @@ def directory_dates(dirs,args):
                     dt = time.strptime(m[1],dt_format)
                 else:
                     dt = time.strptime(m[0],dt_format)
-                t1.append(datetime.date(dt.tm_year,12,31))
+                t1.append(datetime.date(dt.tm_year,12,31))                # set to last month, last day
             else:
-                t0.append(datetime.date(1900,1,1)) # will not get dirs if no dates in them, use --byname
-                t1.append(datetime.date(2100,1,1))
-    mask = [t0[ii]>=firstdate and t1[ii]<=lastdate for ii in range(len(t0))]
+                t0.append(datetime.date(2100,1,1)) # will not get dirs if no dates in them, use --byname
+                t1.append(datetime.date(1900,1,1))
+                
+    mask = [t1[ii]>=firstdate and t0[ii]<=lastdate for ii in range(len(t0))]
     return [dirs[ii] for ii in range(len(dirs)) if mask[ii]]    
 
 def establish_dir(download_dir):
@@ -320,11 +344,16 @@ def download_files(url,args,dirpath,file_list):
                 exit(-1)
             with open(outfile,'wb') as f:
                  f.write(r.content)
-    print('Done')
 
 def download_filesTh(url,args,dirpath,file_list):
-    def do_one(outf,inf):
-        if os.path.isfile(outf) and (int(os.path.getsize(outf)) == int(requests.get(inf,stream=True).headers['Content-Length']) and not args.overwrite):
+    def web_file_size(inf):
+        if inf.endswith( ('.txt','.xml')):
+            return len(requests.get(inf).content)
+        else:
+            return int(requests.get(inf,stream=True).headers['Content-Length'])
+                       
+    def do_one(outf,inf):        
+        if os.path.isfile(outf) and (int(os.path.getsize(outf)) == web_file_size(inf) and not args.overwrite):
             pass #print('Skipping: ',outf )
         else:
             try:
@@ -333,12 +362,21 @@ def download_filesTh(url,args,dirpath,file_list):
                 print(e)
                 exit(-1)
             with open(outf,'wb') as f:
-                 f.write(r.content)        
+                f.write(r.content)    
+            # check size after download
+            if not int(os.path.getsize(outf)) == web_file_size(inf):
+                print('\n {0} did not fully download:'.format(outf))
+                print('\n\t {0} size has {1} bytes.'.format(inf,web_file_size(inf)))
+                print('\n\t {0} size has {1} bytes.'.format(outf,int(os.path.getsize(outf))))
+                exit(-1)
+            
     threads = []
     for file in file_list:
         outfile = args.outpath + '/' + dirpath + file
-        fullpath = url + dirpath + file                        
-        #print(requests.head(fullpath).headers) # Does NOT contain content-length. hmm.
+        if not dirpath in url:
+            fullpath = url + dirpath + file   
+        else:
+            fullpath = url + file
         t = threading.Thread(target=do_one, args=(outfile,fullpath))
         threads.append(t)
         
@@ -354,7 +392,7 @@ def download_prod(urldir_path,args,nsidc_url):
         download_filesTh(urldir_path,args,local_dirname,fl)
 
 def help_msg(keys):
-    message = "GIMP NSIDC numbers available for download: %s" % ' \n'.join([str(key) for key in keys])  # \n doesn't work
+    message = "GIMP NSIDC dataset numbers available for download: %s. Use -pd for descriptions" % ' \n'.join([str(key) for key in keys])  # \n doesn't work
     return message
 
 def use_msg(msg):
@@ -363,9 +401,7 @@ def use_msg(msg):
     print()
 
 def exit_msg(msg):
-    print()
-    print(msg)
-    print()
+    use_msg(msg)
     exit(-1)
     
 ############################################################################
@@ -376,8 +412,8 @@ if __name__ == '__main__':
     try:   
         with open('productPaths.csv') as csvfile:
             rows = csv.reader(csvfile)
-            prod_path= {row[0]:[int(row[1]),row[2],row[3].strip()] for row in rows}   # product number : [#dir levels, date format in directory name, url-path to product]
-        dival = {'dateLevel':0,'dateFormat':1,'url':2}
+            prod_path = {row[0]:[int(row[1]),row[2],row[3].strip(),row[4].strip()] for row in rows}   # product number : [#dir levels, date format in directory name, product description, url-path to product]
+        dival = {'dateLevel':0,'dateFormat':1,'description':2,'url':3}
     except:
         use_msg('Need productPaths.csv file containing path info.')
     
@@ -386,26 +422,35 @@ if __name__ == '__main__':
     # add parameters to parse
     parser.add_argument('-l', '--list', dest='prodlist', metavar='product number', help=help_msg(prod_path.keys()),default=None)  
     parser.add_argument('-p', '--pull', dest='prodpull', metavar='product number', help='product name',default=None) 
-    parser.add_argument('-r', '--region', dest='region', help='options: regional glacier box name (e.g., Wcoast-69.10), or all',default='')
+    parser.add_argument('-r', '--region', dest='region', help='options: regional glacier box name (e.g., Wcoast-69.10N), all',default='')
     parser.add_argument('-fd','--firstdate', dest='firstdate', help='first date as yyyy-mm-dd',default='1900-01-01')
     parser.add_argument('-ld','--lastdate', dest='lastdate', help='last date as yyyy-mm-dd',default='2100-01-01')
-    parser.add_argument('-t', '--type', dest='type', metavar='mosaic type', help='mosaic type for cases with multiple resolutions (e.g., use 20byte to download 0633/2005_2006/20byte)',default='')
-    parser.add_argument('-name', '--byname', dest='byname', metavar='non-date directory name', help='Use for productions with non date derived names (e.g., 0633/multiyear_composite).' ,default='')
+    parser.add_argument('-t', '--type', dest='type', metavar='mosaic type', help='mosaic type for cases with multiple resolutions (e.g., 20byte for 0633/2005_2006/20byte)',default='')
+    parser.add_argument('-name', '--byname', dest='byname', metavar='non-date directory name', help='for products with non-date derived names (e.g., multiyear_composite for 0633/multiyear_composite).' ,default='')
     parser.add_argument('-o', '--overwrite', action='store_true', help='download files even if they already exist')
     parser.add_argument('-v', '--verbose', action='store_true', help='list files as well as directories')
+    parser.add_argument('-pd', '--description',action='store_true',help='list descriptions of all products available for download')
     args = parser.parse_args()
+    args.dival = dival
+
     if len(sys.argv) == 1: # if no command line arguments
         parser.print_help()
         sys.exit(1)
+  
+    if args.description:
+        line0 = '\n'.join([' '+key+':  '+prod_path[key][2] for key in prod_path.keys()])
+        print()
+        print('Prod #     Dataset Description')
+        print(line0)
+        sys.exit(1)
         
-    args.dival = dival
-
+    
     # sort out arguments and return errors if need be
     args.prod = args.prodlist or args.prodpull  
     try:
         url = prod_path[args.prod][args.dival['url']]
     except:
-        exit_msg('Product number %s is not available.' % args.prod)    
+        exit_msg('Product number %s is not available. Use --description for current list.' % args.prod)    
 
     if args.region != 'all': 
         args.region = check_region_name(args.region)
@@ -415,13 +460,34 @@ if __name__ == '__main__':
         
     args.outpath = './' + args.prod
     
-    # put -firstdate and -lastdate arguments into datetime.date format
+    # put --firstdate and --lastdate arguments into datetime.date format
     yf,mf,df = [int(item) for item in args.firstdate.split('-')]
     firstdate = datetime.date(yf,mf,df)  
-    print
     yl,ml,dl = [int(item) for item in args.lastdate.split('-')]
-    lastdate = datetime.date(yl,ml,dl)        
-
+    lastdate = datetime.date(yl,ml,dl)      
+    # modify dates if dateFormat dictates
+    datetags = prod_path[args.prod][args.dival['dateFormat']].replace('.','-').split('-')  # a list results
+    year = month = day = False
+    for item in datetags:
+        if item.startswith('y'):
+            year = True
+            if item.endswith('m'): # 0724
+                month = True
+        if item.startswith('m'):
+            month = True
+        if item.startswith('d'):
+            day = True
+    if month and not day:
+        df = 1
+        wkday,dl = calendar.monthrange(yl,ml)
+        firstdate = datetime.date(yf,mf,df)  
+        lastdate = datetime.date(yl,ml,dl)      
+    if not month and not day:
+        mf=1;df=1
+        ml=12;dl=31
+        firstdate = datetime.date(yf,mf,df)  
+        lastdate = datetime.date(yl,ml,dl)      
+    
     if args.prodlist and args.prodpull:
         exit_msg('You can only list or pull, not both.')
 
@@ -467,7 +533,7 @@ if __name__ == '__main__':
                         download_prod(url+dirname,args,prod_path[args.prod][args.dival['url']])
                         #dir_list.append(url+dirname)
             if not args.type:
-                use_msg('Use --type for mosaiic type.')                        
+                use_msg('Use --type for mosaic type.')                        
         if args.prodlist:
             use_msg('Use --pull instead of --list to pull/download the files.')
     
@@ -545,12 +611,10 @@ if __name__ == '__main__':
             [print('file: ',file) for file in files if args.prodlist if files if args.verbose] 
             if files and args.prodpull:
                 download_prod(url,args,prod_path[args.prod][args.dival['url']])
-                #dir_list.append(url)
                         
             if dirs:
                 for dirname in dirs:
                     if args.prodlist:
-                        print(dirname)
                         subfiles, subdirs = get_names(url + dirname,args)
                         [print('file: ',dirname+file) for file in subfiles if subfiles if args.verbose]
 
@@ -587,9 +651,11 @@ if __name__ == '__main__':
                                 if subsubdirs:
                                     print('huh ', subsubdirs)
                                     exit(-1)
+            if args.prodlist and not args.verbose:
+                use_msg('Use --verbose to list files.')
             if args.prodlist:
                 use_msg('Use --pull instead of --list to pull/download files.')
                 
-        
-        print('Done')
+        if args.prodpull:
+            print('Done')
         

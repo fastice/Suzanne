@@ -1,15 +1,15 @@
-0478,1,yyyy.mm.dd,	https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0478.002/
-0481,2,mmm-dd-yyyy,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0481_MEASURES_greenland_V01/
-0633,1,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0633_MEASURES_greenland_sar_mosaics_v1/
-0642,1,yyyy.mm.dd,	https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0642.001/
-0645,1,yyyy.mm.dd,	https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0645.001/
-0646,2,yyyy-mm,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0646_MEASURES_greenland_vel_optical_v2/
-0670,1,yyyy.mm.dd, 	https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0670.001/
-0713,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0713_MEASURES_gl_mosaic_v1/
-0714,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0714_MEASURES_gimp_mask_v1/
-0715,0,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0715_MEASURES_gimp_dem/
-0723,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0723_MEASURES_image_mosaics_v02/
-0724,0,yyyymm,		https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0724.001/
-0725,1,yyyy,		https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0725_MEASURES_annual_vel_mosaics_v01/
-0727,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0727_MEASURES_quarterly_vel_mosaics_v01/
-0731,1,yyyy-mm-dd,	https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0731_MEASURES_monthly_vel_mosaics_v01/
+0478,1,yyyy.mm.dd,	MEaSUREs Greenland Ice Sheet Velocity Map from InSAR Data - Version 2,				                     https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0478.002/
+0481,2,mmm-dd-yyyy,	MEaSUREs Greenland Ice Velocity: Selected Glacier Site Velocity Maps from InSar - Version1,	                     https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0481_MEASURES_greenland_V01/
+0633,1,yyyy,		MEaSUREs Greenland Ice Sheet Mosaics from SAR data - Version 1,	     	  			                     https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0633_MEASURES_greenland_sar_mosaics_v1/
+0642,1,yyyy.mm.dd,	MEaSUREs Annual Greenland Outlet Glacier Terminus Positions from SAR Mosaics - Version 1,		             https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0642.001/
+0645,1,yyyy.mm.dd,	MEaSUREs Greenland Ice Mapping Project (GIMP) Digital Elevation Model - Version 1,     		                     https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0645.001/
+0646,2,yyyy-mm,		MEaSUREs Greenland Ice Velocity: Selected Glacier Site Velocity Maps from Otical Images - Version 2,                 https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0646_MEASURES_greenland_vel_optical_v2/
+0670,1,yyyy.mm.dd, 	MEaSUREs Multi-year Greenland Ice Sheet Velocity Mosaic - Version 1,    	  	 		             https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0670.001/
+0713,0,yyyy,		MEaSUREs Greenland Ice Mapping Project (GIMP) 2000 Image Mosaic - Version 1,			              	     https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0713_MEASURES_gl_mosaic_v1/
+0714,0,yyyy,		MEaSUREs Greenland Ice Mapping Project (GIMP) Land Ice and Ocean Classification Mask - Version 1,	             https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0714_MEASURES_gimp_mask_v1/
+0715,0,yyyy,		MEaSUREs Greenland Ice Mapping Project (GIMP) Digital Elevation Model from GeoEye and WorldView Imagery - Version 1, https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0715_MEASURES_gimp_dem/
+0723,1,yyyy-mm-dd,	MEaSUREs Greenland Image Mosaics from Sentinel-1A and -1B - Version 2,  	   	      		  	     https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0723_MEASURES_image_mosaics_v02/
+0724,1,yyyy.mm.dd,	MEaSUREs Greenland Monthly Image Mosaics from MODIS - Verion 1,	  						     https://n5eil01u.ecs.nsidc.org/MEASURES/NSIDC-0724.001/
+0725,1,yyyy,		MEaSUREs Greenland Annual Ice Sheet Velocity Mosaics from SAR and Landsat - Version 1,				     https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0725_MEASURES_annual_vel_mosaics_v01/
+0727,1,yyyy-mm-dd,	MEaSUREs Greenland Quarterly Ice Sheet Velocity Mosaics from SAR and Landsat - Version 1,			     https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0727_MEASURES_quarterly_vel_mosaics_v01/
+0731,1,yyyy-mm-dd,	MEaSUREs Greenland Monthly Ice Sheet Velocity Mosaics from SAR and Landsat - Version 1,				     https://daacdata.apps.nsidc.org/pub/DATASETS/nsidc0731_MEASURES_monthly_vel_mosaics_v01/
