@@ -25,18 +25,15 @@ import getpass
 
 import requests
 from runMyThreads import runMyThreads
-#import runMyThreads
-#from '/Users/suzanne/git_repos/' import utilities as u
-#############                                                                                                                                                                  
-# This next block is a bunch of Python 2/3 compatability                                                                                                                       
 
+# This next block is a bunch of Python 2/3 compatability                                                                                                                       
 try:
    # Python 3.x Libs             
     import urllib.request                                                                                                                                    
     from urllib.request import build_opener, install_opener, Request, urlopen
     from urllib.request import HTTPHandler, HTTPSHandler, HTTPCookieProcessor
     from urllib.error import HTTPError, URLError
-    from urllib.parse import urlparse   ########### need for py2
+    from urllib.parse import urlparse  
 
     from http.cookiejar import MozillaCookieJar
     from io import StringIO
@@ -346,14 +343,14 @@ def download_files(url,args,dirpath,file_list):
                  f.write(r.content)
 
 def download_filesTh(url,args,dirpath,file_list):
-    def web_file_size(inf):
-        if inf.endswith( ('.txt','.xml')):
-            return len(requests.get(inf).content)
-        else:
-            return int(requests.get(inf,stream=True).headers['Content-Length'])
+#    def web_file_size(inf):
+#        if inf.endswith( ('.txt','.xml')):
+#            return len(requests.get(inf).content)
+#        else:
+#            return int(requests.get(inf,stream=True).headers['Content-Length'])
                        
     def do_one(outf,inf):        
-        if os.path.isfile(outf) and (int(os.path.getsize(outf)) == web_file_size(inf) and not args.overwrite):
+        if os.path.isfile(outf) and (int(os.path.getsize(outf)) == int(requests.get(inf,stream=True).headers['Content-Length']) and not args.overwrite):
             pass #print('Skipping: ',outf )
         else:
             try:
@@ -364,9 +361,9 @@ def download_filesTh(url,args,dirpath,file_list):
             with open(outf,'wb') as f:
                 f.write(r.content)    
             # check size after download
-            if not int(os.path.getsize(outf)) == web_file_size(inf):
+            if not int(os.path.getsize(outf)) == int(requests.get(inf,stream=True).headers['Content-Length']):
                 print('\n {0} did not fully download:'.format(outf))
-                print('\n\t {0} size has {1} bytes.'.format(inf,web_file_size(inf)))
+                print('\n\t {0} size has {1} bytes.'.format(inf,int(requests.get(inf,stream=True).headers['Content-Length'])))
                 print('\n\t {0} size has {1} bytes.'.format(outf,int(os.path.getsize(outf))))
                 exit(-1)
             
