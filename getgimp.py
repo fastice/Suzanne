@@ -12,8 +12,7 @@ from __future__ import print_function
 
 import csv
 import os, os.path, sys
-#sys.path.insert(0, '/Users/suzanne/git_repos/')
-#import utilities as u
+
 import re
 from bs4 import BeautifulSoup
 import argparse
@@ -204,10 +203,11 @@ def get_names(urldir,args):
     if r.status_code:
         soup =  BeautifulSoup(r.text, 'html.parser')
         for table in soup.find_all('table',{'id':'indexlist'}):
-            for tr in table.find_all('tr',{'class':['even','odd']}):                 
+            for tr in table.find_all('tr',{'class':['even','odd']}):     
                 for td in tr.find_all('td',{'class':'indexcolicon'}): # gets file names
-                    for a in td.find_all('a'):
-                        if '/pub/DATASETS/' not in a['href'] and '/MEASURES/' not in a['href']:
+                    if 'parent' not in td.img['alt'].lower():
+                        for a in td.find_all('a'):
+#                            if '/pub/DATASETS/' not in a['href']: # and '/MEASURES/' not in a['href']:
                             alist.append(a['href'])
                             
         flist = [item for item in alist if not item.endswith('/')]
