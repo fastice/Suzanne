@@ -508,6 +508,8 @@ if __name__ == '__main__':
     ##### list or pull files 
     # dateLevel = 0 currently means no date level, but has types
     #dir_list = []   
+    
+    # make a generator pipeline with get_names and download_prod
     if prod_path[args.prod][args.dival['dateLevel']] == 0:
         files, dirs = get_names(url,args)
         [print('file: ',file) for file in files if args.prodlist if files if args.verbose] 
